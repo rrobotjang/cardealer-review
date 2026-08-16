@@ -38,7 +38,9 @@ services:
       - "5000:5000"
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: cardealer-backend
     depends_on:
       - dealership-api
