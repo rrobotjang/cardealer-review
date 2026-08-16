@@ -1,8 +1,8 @@
 """
 Django settings for the Best Cars dealership review application (BFF).
 
-The Django backend is the Backend-for-Frontend: it serves the HTML pages and
-proxies API calls to the microservices (dealership-api, reviews-api,
+The Django backend is the Backend-for-Frontend: it serves the built React SPA
+and proxies API calls to the microservices (dealership-api, reviews-api,
 sentiment-analyzer).
 """
 import os
@@ -11,6 +11,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# React SPA build output (frontend/dist); Vite base="/static/" so assets are served by staticfiles.
+FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 
 load_dotenv(BASE_DIR / ".env")
 
@@ -55,10 +58,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "djangoproj.urls"
 
+# React SPA index.html lives in frontend/dist; render it via the catch-all route.
+FRONTEND_TEMPLATE_DIRS = [FRONTEND_DIST] if FRONTEND_DIST.is_dir() else []
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": FRONTEND_TEMPLATE_DIRS,
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -93,6 +99,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+if FRONTEND_DIST.is_dir():
+    STATICFILES_DIRS.append(FRONTEND_DIST)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
