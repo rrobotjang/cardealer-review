@@ -1,0 +1,6 @@
+applications:
+  - name: sentiment-analyzer
+    memory: 128M
+    instances: 1
+    command: node server.js
+    path: .
