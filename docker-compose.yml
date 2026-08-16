@@ -35,7 +35,7 @@ services:
     environment:
       - PORT=5000
     ports:
-      - "5000:5000"
+      - "5003:5000"
 
   backend:
     build:
@@ -54,8 +54,12 @@ services:
       - REVIEWS_API_URL=http://reviews-api:3000
       - SENTIMENT_API_URL=http://sentiment-analyzer:5000
       - JWT_SECRET=super-secret-key-for-dev
+      - DJANGO_DB_PATH=/app/data/db.sqlite3
+    volumes:
+      - backend-data:/app/data
     ports:
       - "8000:8000"
 
 volumes:
   mongo-data:
+  backend-data:

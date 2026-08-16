@@ -41,6 +41,11 @@ spec:
                 secretKeyRef:
                   name: jwt-secret
                   key: JWT_SECRET
+            - name: DJANGO_DB_PATH
+              value: /app/data/db.sqlite3
+          volumeMounts:
+            - name: backend-data
+              mountPath: /app/data
           livenessProbe:
             tcpSocket:
               port: http
@@ -58,6 +63,22 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: backend-data
+          persistentVolumeClaim:
+            claimName: backend-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-pvc
+  namespace: cardealer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service

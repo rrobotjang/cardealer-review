@@ -81,7 +81,8 @@ WSGI_APPLICATION = "djangoproj.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        # DJANGO_DB_PATH lets container deployments put SQLite on a mounted volume (data survives restarts).
+        "NAME": os.getenv("DJANGO_DB_PATH", str(BASE_DIR / "db.sqlite3")),
     }
 }
 
