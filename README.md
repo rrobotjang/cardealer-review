@@ -6,12 +6,18 @@ Developer Professional Certificate** capstone architecture.
 ## Architecture
 
 ```
-Browser ──► Django BFF (backend, :8000) ──┬─► dealership-api (Express, :3000, static JSON catalog)
-          (DRF + JWT auth + HTML pages)   ├─► reviews-api (Express + MongoDB, :3000, JWT-protected)
-                                          └─► sentiment-analyzer (Express, :5000, serverless on IBM Code Engine)
+Browser ──► React SPA (frontend/, Vite + React + TypeScript, Bootstrap 5)
+                 │  (served by Django at /, API via /api)
+                 ▼
+          Django BFF (backend, :8000) ──┬─► dealership-api (Express, :3000, static JSON catalog)
+          (DRF + JWT auth)              ├─► reviews-api (Express + MongoDB, :3000, JWT-protected)
+                                        └─► sentiment-analyzer (Express, :5000, serverless on IBM Code Engine)
 ```
 
-- **Django BFF** (`backend/`) — serves the frontend pages and proxies all API calls.
+- **React SPA** (`frontend/`) — Vite + React + TypeScript + Bootstrap 5 UI
+  (home, dealerships, dealer details + reviews, post-review, about, contact, auth modal).
+  Built with `base="/static/"`, so the compiled bundle is served by Django.
+- **Django BFF** (`backend/`) — serves the built SPA (`frontend/dist`) and proxies all API calls.
   Handles registration/login, issues JWTs (signed with the shared `JWT_SECRET`).
 - **dealership-api** (`dealership-api/`) — read-only dealership catalog.
 - **reviews-api** (`reviews-api/`) — reviews stored in MongoDB; `POST /review` requires
@@ -23,7 +29,8 @@ Browser ──► Django BFF (backend, :8000) ──┬─► dealership-api (Ex
 ## Project layout
 
 ```
-backend/               Django BFF (settings, djangoapp with DRF views, 6 Bootstrap templates)
+backend/               Django BFF (settings, djangoapp with DRF views, serves built SPA)
+frontend/              React SPA (Vite + React + TypeScript, Bootstrap 5)
 dealership-api/        Express microservice + data/dealerships.json
 reviews-api/           Express + Mongoose microservice + JWT middleware
 sentiment-analyzer/    Serverless sentiment microservice + codeengine.md deploy guide
@@ -53,14 +60,21 @@ cd dealership-api  && npm install && npm start        # :3000
 cd reviews-api     && npm install && npm start        # :3000
 cd sentiment-analyzer && npm install && npm start     # :5000
 
-# 2. Django BFF
+# 2. React SPA (dev server, proxies /api to Django :8000)
+cd frontend && npm install && npm run dev             # http://localhost:5173
+
+# 3. Django BFF
 cd backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env        # point URLs at your local services
 .venv/bin/python manage.py makemigrations djangoapp
 .venv/bin/python manage.py migrate
-.venv/bin/python manage.py runserver 0.0.0.0:8000    # http://localhost:8000
+.venv/bin/python manage.py runserver 0.0.0.0:8000
 ```
+
+> **Production-style local run:** `cd frontend && npm run build`, then Django serves
+> the built SPA directly at `http://localhost:8000` (index.html from `frontend/dist`,
+> assets from `/static/assets/*`).
 
 > The three Express services all default to the same `PORT=3000`. For local testing run
 > them on separate ports (`PORT=3001 npm start`, etc.) and point `.env` accordingly.
@@ -98,7 +112,8 @@ in the backend's environment.
 
 ```bash
 # build & push images to your registry (replace <REGISTRY> in the manifests)
-docker build -t <REGISTRY>/backend:latest backend
+# backend image is built from the repo root (multi-stage: builds the SPA first)
+docker build -f backend/Dockerfile -t <REGISTRY>/backend:latest .
 docker build -t <REGISTRY>/dealership-api:latest dealership-api
 docker build -t <REGISTRY>/reviews-api:latest reviews-api
 docker build -t <REGISTRY>/sentiment-analyzer:latest sentiment-analyzer
