@@ -1,0 +1,8 @@
+applications:
+  - name: reviews-api
+    memory: 128M
+    instances: 1
+    command: node server.js
+    path: .
+    env:
+      MONGO_URL: mongodb://localhost:27017/reviews
