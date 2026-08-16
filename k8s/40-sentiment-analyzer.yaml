@@ -1,0 +1,62 @@
+# Replace <REGISTRY> with your image registry, e.g. us.icr.io/<namespace>/sentiment-analyzer:latest
+# NOTE: in the IBM capstone, the sentiment-analyzer is deployed serverless on IBM Code Engine
+# (see sentiment-analyzer/codeengine.md). This manifest deploys it as a regular workload for
+# self-managed clusters (OpenShift/k8s) — scale to 0 manually when idle.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentiment-analyzer
+  namespace: cardealer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentiment-analyzer
+  template:
+    metadata:
+      labels:
+        app: sentiment-analyzer
+    spec:
+      containers:
+        - name: sentiment-analyzer
+          image: <REGISTRY>/sentiment-analyzer:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: PORT
+              value: "5000"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentiment-analyzer
+  namespace: cardealer
+spec:
+  selector:
+    app: sentiment-analyzer
+  ports:
+    - port: 5000
+      targetPort: 5000
+      name: http
+  type: ClusterIP

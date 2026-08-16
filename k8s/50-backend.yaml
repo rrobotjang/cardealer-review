@@ -1,0 +1,74 @@
+# Replace <REGISTRY> with your image registry, e.g. us.icr.io/<namespace>/backend:latest
+# On OpenShift: oc apply -f k8s/ then expose a Route:
+#   oc expose svc/backend --name bestcars -n cardealer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: cardealer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: <REGISTRY>/backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DJANGO_SECRET_KEY
+              value: "change-me-in-production"
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: DEALERSHIP_API_URL
+              value: http://dealership-api:3000
+            - name: REVIEWS_API_URL
+              value: http://reviews-api:3000
+            - name: SENTIMENT_API_URL
+              value: http://sentiment-analyzer:5000
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: cardealer
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  type: ClusterIP
