@@ -10,8 +10,8 @@ Browser ──► React SPA (frontend/, Vite + React + TypeScript, Bootstrap 5)
                  │  (served by Django at /, API via /api)
                  ▼
           Django BFF (backend, :8000) ──┬─► dealership-api (Express, :3000, static JSON catalog)
-          (DRF + JWT auth)              ├─► reviews-api (Express + MongoDB, :3000, JWT-protected)
-                                        └─► sentiment-analyzer (Express, :5000, serverless on IBM Code Engine)
+          (DRF + JWT auth)              ├─► reviews-api (Express + MongoDB, :3001, JWT-protected)
+                                        └─► sentiment-analyzer (Express, :5003 local / :5000 in-cluster)
 ```
 
 - **React SPA** (`frontend/`) — Vite + React + TypeScript + Bootstrap 5 UI
@@ -45,7 +45,7 @@ docker compose up --build
 # backend      -> http://localhost:8000
 # dealerships  -> http://localhost:3000/dealerships
 # reviews-api  -> http://localhost:3001 (host) / reviews-api:3000 (internal)
-# sentiment    -> http://localhost:5000
+# sentiment    -> http://localhost:5003 (host) / sentiment-analyzer:5000 (internal)
 ```
 
 The Django BFF containers talk to services by Compose name (`dealership-api:3000`, etc.).
@@ -54,11 +54,19 @@ The Django BFF containers talk to services by Compose name (`dealership-api:3000
 
 Prerequisites: Node 24+, Python 3.12+, local MongoDB (or adjust `MONGO_URL`).
 
+Fastest path — one command starts the three microservices + Django BFF:
+
 ```bash
-# 1. Microservices
-cd dealership-api  && npm install && npm start        # :3000
-cd reviews-api     && npm install && npm start        # :3000
-cd sentiment-analyzer && npm install && npm start     # :5000
+./start-local.sh        # http://localhost:8000 (built SPA served by Django)
+```
+
+Or step by step:
+
+```bash
+# 1. Microservices (ports 3000/3001/5003 — macOS ControlCenter owns :5000, hence 5003)
+cd dealership-api  && npm install && npm start                    # :3000
+cd reviews-api     && npm install && PORT=3001 npm start           # :3001
+cd sentiment-analyzer && npm install && PORT=5003 npm start        # :5003
 
 # 2. React SPA (dev server, proxies /api to Django :8000)
 cd frontend && npm install && npm run dev             # http://localhost:5173
@@ -76,8 +84,8 @@ cp .env.example .env        # point URLs at your local services
 > the built SPA directly at `http://localhost:8000` (index.html from `frontend/dist`,
 > assets from `/static/assets/*`).
 
-> The three Express services all default to the same `PORT=3000`. For local testing run
-> them on separate ports (`PORT=3001 npm start`, etc.) and point `.env` accordingly.
+> The three Express services all default to `PORT=3000`; run them on separate ports
+> (`PORT=3001`, `PORT=5003`) as shown above. The Compose/K8s deployments set these internally.
 
 ## API surface
 
@@ -150,9 +158,10 @@ cd sentiment-analyzer && ibmcloud cf push
 | `DEBUG` | `True` | Django debug mode |
 | `ALLOWED_HOSTS` | `*` | Comma-separated hosts |
 | `DEALERSHIP_API_URL` | `http://localhost:3000` | dealership-api base URL |
-| `REVIEWS_API_URL` | `http://localhost:3000` | reviews-api base URL |
-| `SENTIMENT_API_URL` | `http://localhost:5000` | sentiment-analyzer base URL |
+| `REVIEWS_API_URL` | `http://localhost:3001` | reviews-api base URL |
+| `SENTIMENT_API_URL` | `http://localhost:5003` | sentiment-analyzer base URL |
 | `JWT_SECRET` | dev value | Shared signing key across BFF + reviews-api — must match |
+| `DJANGO_DB_PATH` | `backend/db.sqlite3` | SQLite path; set to `/app/data/db.sqlite3` in containers so data survives restarts |
 
 ## Security notes
 
