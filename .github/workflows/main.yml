@@ -134,7 +134,7 @@ jobs:
         run: npm ci
         working-directory: frontend
       - name: Build for Pages
-        run: VITE_BASE=/cardealer-review/ npm run build
+        run: VITE_BASE=/cardealer-review/ VITE_API_URL=http://localhost:8000 npm run build
         working-directory: frontend
       - name: Create 404.html for SPA routing
         run: cp frontend/dist/index.html frontend/dist/404.html

@@ -11,6 +11,8 @@ import type {
 const TOKEN_KEY = 'jwt'
 const USERNAME_KEY = 'username'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export function getToken(): string | null {
   return sessionStorage.getItem(TOKEN_KEY)
 }
@@ -46,7 +48,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
   }
-  const response = await fetch(path, { ...options, headers })
+  const response = await fetch(`${API_BASE}${path}`, { ...options, headers })
   const data = await response.json().catch(() => null)
   if (!response.ok) {
     const message =
