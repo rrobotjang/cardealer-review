@@ -2,8 +2,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  // Django serves the built SPA: assets are written to /static/assets/*.
-  base: '/static/',
+  base: process.env.VITE_BASE || '/static/',
   plugins: [react()],
   server: {
     proxy: {
