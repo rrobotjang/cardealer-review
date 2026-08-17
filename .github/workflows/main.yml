@@ -136,8 +136,21 @@ jobs:
       - name: Build for Pages
         run: VITE_BASE=/cardealer-review/ VITE_API_URL=http://localhost:8000 npm run build
         working-directory: frontend
-      - name: Create 404.html for SPA routing
-        run: cp frontend/dist/index.html frontend/dist/404.html
+      - name: Create 404.html redirect to root
+        run: |
+          cat > frontend/dist/404.html << 'REDIRECT'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="refresh" content="0;url=https://rrobotjang.github.io/">
+            <title>Redirecting to Best Cars...</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="https://rrobotjang.github.io/">Best Cars</a>...</p>
+          </body>
+          </html>
+          REDIRECT
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
